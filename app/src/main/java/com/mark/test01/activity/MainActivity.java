@@ -1,10 +1,11 @@
 package com.mark.test01.activity;
 
-import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.database.MergeCursor;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.media.MediaPlayer;
 import android.os.Handler;
 import android.os.Message;
@@ -13,20 +14,27 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.SimpleCursorAdapter;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.PopupWindow;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.github.hiteshsondhi88.libffmpeg.FFmpeg;
 import com.github.hiteshsondhi88.libffmpeg.FFmpegExecuteResponseHandler;
 import com.github.hiteshsondhi88.libffmpeg.FFmpegLoadBinaryResponseHandler;
+import com.github.hiteshsondhi88.libffmpeg.exceptions.FFmpegCommandAlreadyRunningException;
+import com.github.hiteshsondhi88.libffmpeg.exceptions.FFmpegNotSupportedException;
 import com.mark.test01.R;
 import com.mark.test01.config.Config;
 
@@ -42,8 +50,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
     private ListView listView;
     private MediaPlayer mMediaPlayer;
-    private ProgressDialog mProgressDialog;
-
+    private ProgressBar mProgressBar;
+    private AlertDialog mDialog;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,7 +85,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
                 }
             });
-        }catch (Exception e){
+        }catch (FFmpegNotSupportedException e){
 
         }
     }
@@ -88,32 +96,37 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             fFmpeg.execute(cmd, new FFmpegExecuteResponseHandler() {
                 @Override
                 public void onSuccess(String message) {
-                    mProgressDialog.setMessage("成功");
+                    closeProgressDialog();
                 }
 
                 @Override
                 public void onProgress(String message) {
-                    mProgressDialog.setMessage(message);
+
                 }
 
                 @Override
                 public void onFailure(String message) {
-                    mProgressDialog.setMessage("失败+:"+message);
-                    Log.e("onFailure:" , message);
+                    closeProgressDialog();
                 }
 
                 @Override
                 public void onStart() {
-                    mProgressDialog.show();
                 }
 
                 @Override
                 public void onFinish() {
-//                    mProgressDialog.setMessage("结束");
-                    //mProgressDialog.dismiss();
+                    closeProgressDialog();
                 }
             });
-        }catch (Exception e){
+        }catch (FFmpegCommandAlreadyRunningException e){
+            e.printStackTrace();
+
+
+            fFmpeg = null;
+            loadData();
+            Log.e("CMD--2:",String.valueOf(cmd));
+            //String cmd = "-version";
+            excuteCMD(cmd);
 
         }
     }
@@ -164,7 +177,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         listView.setAdapter(mAdapter);
 
         //final String outPath = "/storage/emulated/0/xx" + System.currentTimeMillis() + "xx.mp3";
-        final String outPath = "/storage/emulated/0/o.mp3";
+
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -172,15 +185,15 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 TextView t = view.findViewById(R.id.tv_audio_path);
                 String path = t.getText().toString();
 
-                mProgressDialog = new ProgressDialog(MainActivity.this);
-                mProgressDialog.setCanceledOnTouchOutside(false);
-                mProgressDialog.setProgressStyle(0);
-                mProgressDialog.setTitle("处理中.....");
+                openProgressDialog();
 
-                String [] cmd = Config.GET_AUDIO_FADE_IN_OUT(path,outPath);
-                Log.e("CMD:",String.valueOf(cmd));
+                outPath = "/storage/emulated/0/"+System.currentTimeMillis() + "mm" + ".mp3";
+
+                cmd = Config.CMD_AUDIO_FADE_IN(path,outPath,new int[]{0,5});
+                Log.e("CMD--1:",String.valueOf(cmd));
                 //String cmd = "-version";
                 excuteCMD(cmd);
+
 
                 //playMusic(path);
             }
@@ -196,6 +209,23 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
                 return true;
             }
         });
+    }
+
+    String [] cmd;
+    String outPath;
+    private void closeProgressDialog(){
+        mDialog.dismiss();
+    }
+
+    private void openProgressDialog() {
+        View progressDialogView = LayoutInflater.from(this).inflate(R.layout.progress_dialog,null);
+        mProgressBar = progressDialogView.findViewById(R.id.progressBar);
+        mDialog = new AlertDialog.Builder(this).create();
+        //mDialog.setCanceledOnTouchOutside(false);
+        mDialog.show();
+        Window window = mDialog.getWindow();
+        window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        window.setContentView(progressDialogView);
     }
 
 
@@ -294,7 +324,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         public MyContentObserver(Handler handler) {
             super(handler);
             this.handler = handler;
-
         }
 
         @Override

@@ -34,4 +34,39 @@ public class Config {
         return cmd.split(" ");
     }
 
+    /**
+     * 从指定时间处理 音频淡入
+     * @param in
+     * @param out
+     * @param span span[0]: 起始时间  span[1]:时长
+     * @return
+     */
+    public static String [] CMD_AUDIO_FADE_IN(String in, String out,int[] span){
+        String cmd = "-i*" +
+                in +
+                "*-ss*" + span[0] + "*-t*" + span[1] +
+                "*-af*afade=t=in:st="+span[0]+":d="+span[1]+"*" +
+                out
+                ;
+        return cmd.split("\\*");
+    }
+
+    /**
+     * 从指定时间处理 音频淡入淡出
+     * @param in
+     * @param out
+     * @param span span[0]: 起始时间  span[1]:时长
+     * @return
+     */
+    public static String [] CMD_AUDIO_FADE_OUT(String in, String out,int[] span){
+        String cmd =   "-i*" +
+                in +
+                "*-ss*" + span[0] + "*-t*" + span[1] +
+                "*-af*afade=t=out:st="+span[0]+":d="+span[1]+"*" +
+                out
+                ;
+        return cmd.split("\\*");
+    }
+
+
 }
