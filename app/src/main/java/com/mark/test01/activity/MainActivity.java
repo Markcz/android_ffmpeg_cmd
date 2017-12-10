@@ -294,6 +294,7 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
         public MyContentObserver(Handler handler) {
             super(handler);
             this.handler = handler;
+
         }
 
         @Override
