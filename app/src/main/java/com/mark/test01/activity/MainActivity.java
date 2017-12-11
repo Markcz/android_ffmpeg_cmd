@@ -1,15 +1,20 @@
 package com.mark.test01.activity;
 
+import android.annotation.TargetApi;
 import android.content.ContentValues;
+import android.content.Intent;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.database.MergeCursor;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.media.MediaPlayer;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
@@ -204,11 +209,41 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
             public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
 
                 TextView t = view.findViewById(R.id.tv_audio_path);
-                String path = t.getText().toString();
-                setupUpdateInfo(path,id);
+                path = t.getText().toString();
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
+                    requestWriteSettings();
+                }else {
+                    Config.setMyRingtone(MainActivity.this,path);
+                }
+
+
+                //setupUpdateInfo(path,id);
                 return true;
             }
         });
+    }
+
+    String path ;
+    private static final int REQUEST_CODE_WRITE_SETTINGS = 1;
+    private void requestWriteSettings() {
+        Intent intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
+        intent.setData(Uri.parse("package:" + getPackageName()));
+        startActivityForResult(intent, REQUEST_CODE_WRITE_SETTINGS );
+    }
+
+    @TargetApi(Build.VERSION_CODES.M)
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_CODE_WRITE_SETTINGS) {
+            if (Settings.System.canWrite(this)) {
+                Log.i("TAG", "onActivityResult write settings granted" );
+                if (path != null){
+                    Config.setMyRingtone(this,path);
+                }
+            }
+        }
     }
 
     String [] cmd;
