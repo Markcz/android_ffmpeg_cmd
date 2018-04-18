@@ -418,6 +418,8 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
     @Override
     protected void onDestroy() {
         super.onDestroy();
+
+
         getContentResolver().unregisterContentObserver(myContentObserver);
         if (mMediaPlayer!=null){
             if (mMediaPlayer.isPlaying()){
